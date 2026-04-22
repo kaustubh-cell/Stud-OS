@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS.K8BH - DEVUTILITY</title>
+    <style>
+        :root {
+            --os-bg: #ffffff;
+            --os-text: #000000;
+            --os-border: #000000;
+            --font-os: "Courier New", Courier, monospace;
+            --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --phi: 1.618rem;
+            --phi-sm: 0.618rem;
+        }
+        body.theme-introvert {
+            --os-bg: #000000;
+            --os-text: #ffffff;
+            --os-border: #ffffff;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-os);
+            image-rendering: pixelated;
+            font-weight: bold;
+        }
+        body {
+            background-color: var(--os-text);
+            color: var(--os-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 16px;
+            background: var(--os-bg);
+            border-left: 4px solid var(--os-border);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--os-text);
+            border: 4px solid var(--os-bg);
+        }
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.15) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .desktop-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-conic-gradient(var(--os-text) 0% 25%, var(--os-bg) 0% 50%) 50% / 4px 4px;
+            z-index: -1;
+        }
+        @keyframes slideIn {
+            0% { transform: translateY(50px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes flash-invert {
+            0%, 100% { background: var(--os-text); color: var(--os-bg); }
+            50% { background: var(--os-bg); color: var(--os-text); }
+        }
+        @keyframes shake-invert {
+            0%, 100% { transform: translateX(0); background: var(--os-text); color: var(--os-bg); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .app-window {
+            width: 100%;
+            max-width: 1000px;
+            height: 85vh;
+            background-color: var(--os-bg);
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.6s var(--spring) forwards;
+            border: 4px solid var(--os-border);
+            box-shadow: 12px 12px 0px var(--os-border);
+            overflow: hidden;
+        }
+        .os-titlebar {
+            background: var(--os-text);
+            color: var(--os-bg);
+            height: 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+            border-bottom: 4px solid var(--os-border);
+            cursor: move;
+        }
+        .os-titlebar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+        .os-titlebar-controls {
+            display: flex;
+            gap: 6px;
+        }
+        .os-btn-control {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            background-color: var(--os-bg);
+            color: var(--os-text);
+            border: 2px solid var(--os-border);
+            cursor: pointer;
+            outline: none;
+            box-shadow: 2px 2px 0px var(--os-bg);
+        }
+        .os-btn-control:active {
+            background-color: var(--os-text);
+            color: var(--os-bg);
+            box-shadow: none;
+            transform: translate(2px, 2px);
+        }
+        .os-panel-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background-color: var(--os-bg);
+        }
+        .sidebar {
+            width: 300px;
+            background-color: var(--os-bg);
+            border-right: 4px solid var(--os-border);
+            display: flex;
+            flex-direction: column;
+        }
+        .score-container {
+            background: var(--os-text);
+            color: var(--os-bg);
+            text-align: center;
+            padding: var(--phi);
+            border-bottom: 4px solid var(--os-border);
+            text-transform: uppercase;
+        }
+        .score-container span {
+            font-size: 3rem;
+            display: block;
+            line-height: 1;
+            margin-top: 0.5rem;
+        }
+        .score-container.success-pulse {
+            animation: flash-invert 0.2s 3;
+        }
+        .nav-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            padding: var(--phi-sm);
+        }
+        .nav-item {
+            padding: 1.2rem;
+            margin-bottom: var(--phi-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;
+            border: 4px solid transparent;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+        }
+        .nav-item:hover {
+            border-color: var(--os-border);
+            transform: translateX(5px);
+        }
+        .nav-item.active {
+            background-color: var(--os-text);
+            color: var(--os-bg);
+            border-color: var(--os-text);
+            transform: translateX(5px);
+        }
+        .locked-nav {
+            display: none;
+        }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            background-color: var(--os-bg);
+        }
+        .view {
+            display: none;
+            opacity: 0;
+            animation: slideIn 0.3s ease forwards;
+        }
+        .view.active-view {
+            display: block;
+            opacity: 1;
+        }
+        .view-desc {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 4px dotted var(--os-border);
+            text-transform: uppercase;
+        }
+        .os-fieldset {
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 4px solid var(--os-border);
+            box-shadow: 6px 6px 0px var(--os-border);
+        }
+        .os-legend {
+            font-size: 1.4rem;
+            text-transform: uppercase;
+            background: var(--os-bg);
+            padding: 0 15px;
+            margin-left: 10px;
+            border: 4px solid var(--os-border);
+        }
+        .btn {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            background-color: var(--os-bg);
+            color: var(--os-text);
+            border: 4px solid var(--os-border);
+            box-shadow: 6px 6px 0px var(--os-border);
+            outline: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active {
+            transform: translate(6px, 6px);
+            box-shadow: 0px 0px 0px var(--os-border);
+            background-color: var(--os-text);
+            color: var(--os-bg);
+        }
+        .error-shake {
+            animation: shake-invert 0.4s var(--spring);
+        }
+        .success-pulse {
+            background: var(--os-text) !important;
+            color: var(--os-bg) !important;
+        }
+        .os-footer {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 4px solid var(--os-border);
+            background-color: var(--os-bg);
+        }
+        .os-spacer {
+            flex: 1;
+        }
+        .album-art {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 1.5rem;
+            border: 4px solid var(--os-border);
+            box-shadow: 6px 6px 0px var(--os-border);
+        }
+        #visualizer-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        .audio-scrubber-container {
+            width: 100%;
+            margin: 1rem 0;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            height: 1.5rem;
+            outline: none;
+            border: 4px solid var(--os-border);
+            padding: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: var(--os-text);
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 12px;
+            cursor: pointer;
+            background: var(--os-bg);
+            border: 2px solid var(--os-text);
+        }
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 12px;
+            border: 4px solid var(--os-border);
+            box-shadow: 4px 4px 0px var(--os-border);
+        }
+        .volume-container input {
+            width: 120px;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 2rem;
+        }
+        .shop-card {
+            border: 4px solid var(--os-border);
+            padding: 1.5rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            background-color: var(--os-bg);
+            color: var(--os-text);
+            text-align: center;
+            box-shadow: 6px 6px 0px var(--os-border);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .shop-card:active {
+            transform: translate(6px, 6px);
+            box-shadow: 0px 0px 0px var(--os-border);
+        }
+        .shop-card.locked {
+            border-style: dashed;
+            box-shadow: none;
+        }
+        .shop-card:hover:not(.locked) {
+            background: var(--os-text);
+            color: var(--os-bg);
+        }
+        .price {
+            padding: 8px;
+            display: inline-block;
+            margin-top: 1rem;
+            border: 4px solid var(--os-text);
+            background: var(--os-bg);
+            color: var(--os-text);
+        }
+        .shop-card:hover:not(.locked) .price {
+            border-color: var(--os-bg);
+            background: var(--os-text);
+            color: var(--os-bg);
+        }
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .quiz-question {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            padding: var(--phi);
+            border: 4px dashed var(--os-border);
+            background: var(--os-bg);
+        }
+        .snippet-display {
+            font-size: 1.8rem;
+            border: 4px dotted var(--os-border);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            box-shadow: inset 4px 4px 0px rgba(0,0,0,0.1);
+        }
+        .typer-input {
+            width: 100%;
+            padding: 1.5rem;
+            font-size: 1.8rem;
+            text-align: center;
+            border: 4px solid var(--os-border);
+            background: var(--os-bg);
+            color: var(--os-text);
+            margin-bottom: 1.5rem;
+            outline: none;
+            box-shadow: 6px 6px 0px var(--os-border);
+            transition: 0.1s;
+        }
+        .typer-input:focus {
+            background: var(--os-text);
+            color: var(--os-bg);
+            transform: translate(6px, 6px);
+            box-shadow: 0px 0px 0px var(--os-border);
+        }
+        .typer-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            border-top: 4px solid var(--os-border);
+            padding-top: 1rem;
+        }
+        .sniper-target-display {
+            padding: 1.5rem;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            border: 4px solid var(--os-border);
+            text-align: center;
+            box-shadow: 6px 6px 0px var(--os-border);
+        }
+        .sniper-arena {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            padding: 2rem;
+            border: 4px dashed var(--os-border);
+            background: var(--os-bg);
+        }
+        .sniper-box {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            border: 4px solid var(--os-border);
+            cursor: crosshair;
+            box-shadow: 4px 4px 0px var(--os-border);
+            transition: 0.1s;
+        }
+        .sniper-box:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px var(--os-border);
+            background: var(--os-text);
+            color: var(--os-bg);
+        }
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        .memory-card {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: var(--os-text);
+            color: var(--os-bg);
+            border: 4px solid var(--os-border);
+            box-shadow: 6px 6px 0px var(--os-border);
+            transition: 0.1s;
+        }
+        .memory-card.flipped {
+            background-color: var(--os-bg);
+            color: var(--os-text);
+            box-shadow: none;
+            transform: translate(6px, 6px);
+        }
+        .memory-card span {
+            display: none;
+        }
+        .memory-card.flipped span {
+            display: block;
+        }
+        .memory-card.matched {
+            visibility: hidden;
+        }
+        .flex-arena {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            display: flex;
+            margin-bottom: 2rem;
+            border: 4px dashed var(--os-border);
+            background: var(--os-bg);
+        }
+        .flex-ghost {
+            width: 80px;
+            height: 80px;
+            border: 4px dotted var(--os-text);
+            opacity: 0.5;
+            position: absolute;
+        }
+        .flex-box {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--os-text);
+            color: var(--os-bg);
+            z-index: 2;
+            border: 4px solid var(--os-border);
+        }
+        .flex-options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        .arcade-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body class="theme-1bit">
+    <div class="crt-overlay"></div>
+    <div class="desktop-grid"></div>
+
+    <div class="app-window slide-in-top">
+        <div class="os-titlebar">
+            <div class="os-titlebar-left">
+                <span class="os-icon">💾</span>
+                <span class="os-title">K8BH DevUtility MAX</span>
+            </div>
+            <div class="os-titlebar-controls">
+                <button class="os-btn-control">?</button>
+                <button class="os-btn-control">_</button>
+                <button class="os-btn-control">X</button>
+            </div>
+        </div>
+
+        <div class="os-panel-main main-layout">
+            <nav class="sidebar">
+                
+                <div class="score-container" id="score-box">
+                    <div style="font-size: 0.9rem; letter-spacing: 2px;">TOTAL XP</div>
+                    <span id="global-score">0</span>
+                </div>
+
+                <ul class="nav-list" id="nav-list">
+                    <li class="nav-item active" data-target="player-view">🎧 Audio Player</li>
+                    <li class="nav-item" data-target="shop-view">🛒 Black Market</li>
+                    <li class="nav-item" data-target="quiz-view">📝 Gauntlet</li>
+                    <li class="nav-item" data-target="typer-view">⌨️ Syntax Typer</li>
+                    <li class="nav-item locked-nav" id="nav-sniper" data-target="sniper-view">🎯 CSS Sniper</li>
+                    <li class="nav-item locked-nav" id="nav-memory" data-target="memory-view">🧠 Tag Match</li>
+                    <li class="nav-item locked-nav" id="nav-flex" data-target="flex-view">📦 Flex Master</li>
+                    <li class="nav-item locked-nav" id="nav-arcade" data-target="arcade-view">🕹️ Mega Arcade</li>
+                </ul>
+            </nav>
+
+            <main class="content-area">
+                
+                <section id="player-view" class="view active-view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">Audio Visualizer</legend>
+                        <div class="game-panel">
+                            <div class="album-art"><canvas id="visualizer-canvas"></canvas></div>
+                            <h2 id="track-name" style="margin-bottom: 1rem; font-size:1.2rem; text-align:center; border-bottom: 4px dotted var(--os-border); padding-bottom: 1rem;">No Audio Loaded</h2>
+                            <div class="audio-scrubber-container">
+                                <input type="range" id="audio-progress" value="0" min="0" max="100" step="0.1">
+                            </div>
+                            <div class="controls">
+                                <input type="file" id="audio-upload" accept="audio/*" style="display: none;">
+                                <button class="btn" onclick="document.getElementById('audio-upload').click()">Load File</button>
+                                <button class="btn" id="btn-play">Play</button>
+                                <button class="btn" id="btn-pause">Pause</button>
+                                <div class="volume-container">
+                                    <span style="font-size: 1.2rem;">🔊</span>
+                                    <input type="range" id="audio-volume" value="100" min="0" max="100">
+                                </div>
+                            </div>
+                            <audio id="audio-player" crossorigin="anonymous"></audio>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section id="shop-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">Black Market System</legend>
+                        <p class="view-desc">Unlocks saved to root drive.</p>
+                        <div class="shop-grid" id="shop-grid"></div>
+                    </fieldset>
+                </section>
+
+                <section id="quiz-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">The 50-Question Gauntlet</legend>
+                        <div class="game-panel" id="quiz-container"></div>
+                    </fieldset>
+                </section>
+
+                <section id="typer-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">Syntax Typer</legend>
+                        <div class="game-panel typer-card">
+                            <div class="snippet-display" id="snippet-display">Loading...</div>
+                            <input type="text" id="typer-input" class="typer-input" placeholder="[ TYPE HERE ]" autocomplete="off" spellcheck="false">
+                            <div class="typer-stats">
+                                <div id="typer-feedback">System Ready</div>
+                                <div id="typer-wpm">WPM: 0</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section id="sniper-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">CSS Sniper Protocol</legend>
+                        <div class="game-panel">
+                            <div class="sniper-target-display" id="sniper-target"></div>
+                            <div class="sniper-arena" id="sniper-arena"></div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section id="memory-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">Tag Match Memory</legend>
+                        <div class="game-panel">
+                            <div class="memory-grid" id="memory-grid"></div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section id="flex-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">Flex Master Control</legend>
+                        <div class="game-panel">
+                            <h2 id="flex-prompt" style="margin-bottom: 1.5rem; font-size:1.2rem; text-align:center;"></h2>
+                            <div class="flex-arena" id="flex-arena">
+                                <div class="flex-ghost" id="flex-ghost"></div>
+                                <div class="flex-box" id="flex-box">CSS</div>
+                            </div>
+                            <div class="flex-options" id="flex-options"></div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section id="arcade-view" class="view">
+                    <fieldset class="os-fieldset">
+                        <legend class="os-legend">Mega Arcade Sequence</legend>
+                        <p class="view-desc">Micro-games initialized.</p>
+                        <div class="game-panel" id="arcade-container"></div>
+                    </fieldset>
+                </section>
+
+            </main>
+        </div>
+
+        <div class="os-footer">
+            <button id="theme-toggle" class="btn">🌗 Invert Colors</button>
+            <div class="os-spacer"></div>
+            <button class="btn">Cancel</button>
+            <button class="btn" style="font-weight:900; border-width: 4px;">Apply</button>
+        </div>
+    </div>
+
+    <audio id="sfx-win" src="ding.mp3"></audio>
+    <audio id="sfx-lose" src="fahhh.mp3"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function shuffleArray(array) {
+                let newArr = [...array];
+                for (let i = newArr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+                }
+                return newArr;
+            }
+
+            let score = parseInt(localStorage.getItem('kaustubh-cell_score')) || 0;
+            
+            let savedOwned = [];
+            try {
+                savedOwned = JSON.parse(localStorage.getItem('kaustubh-cell_owned') || '[]');
+            } catch (e) {
+                savedOwned = [];
+            }
+            const owned = new Set(savedOwned);
+            
+            let isOrganicTheme = localStorage.getItem('kaustubh-cell_theme') === 'true';
+
+            const scoreUI = document.getElementById('global-score');
+            const scoreBox = document.getElementById('score-box');
+            const sndWin = document.getElementById('sfx-win');
+            const sndLose = document.getElementById('sfx-lose');
+
+            function saveState() {
+                localStorage.setItem('kaustubh-cell_score', score);
+                localStorage.setItem('kaustubh-cell_owned', JSON.stringify(Array.from(owned)));
+                localStorage.setItem('kaustubh-cell_theme', isOrganicTheme);
+            }
+
+            function addScore(pts) {
+                score += pts; 
+                scoreUI.textContent = score;
+                scoreBox.classList.remove('success-pulse'); 
+                void scoreBox.offsetWidth; 
+                scoreBox.classList.add('success-pulse'); 
+                saveState();
+            }
+            
+            scoreUI.textContent = score;
+            if(isOrganicTheme) document.body.classList.add('theme-introvert');
+
+            document.getElementById('theme-toggle').onclick = () => {
+                isOrganicTheme = !isOrganicTheme;
+                document.body.classList.toggle('theme-introvert', isOrganicTheme);
+                saveState();
+            };
+
+            function playWin() { if(sndWin) { sndWin.currentTime=0; sndWin.play().catch(()=>{}); } }
+            function playLose() { if(sndLose) { sndLose.currentTime=0; sndLose.play().catch(()=>{}); } }
+
+            const navItems = document.querySelectorAll('.nav-item');
+            const views = document.querySelectorAll('.view');
+            
+            function switchView(id) {
+                views.forEach(v => {
+                    v.style.display = 'none';
+                    v.classList.remove('active-view');
+                });
+                navItems.forEach(n => n.classList.remove('active'));
+                
+                const targetView = document.getElementById(id);
+                const targetNav = document.querySelector(`[data-target="${id}"]`);
+                
+                if(targetView && targetNav) {
+                    targetView.style.display = 'block';
+                    void targetView.offsetWidth; 
+                    targetView.classList.add('active-view');
+                    targetNav.classList.add('active');
+                }
+            }
+            navItems.forEach(n => n.addEventListener('click', () => switchView(n.dataset.target)));
+
+            document.addEventListener('keydown', (e) => {
+                if(document.activeElement.tagName === 'INPUT') return;
+                if(e.code === 'Space') {
+                    e.preventDefault();
+                    if(audio.paused) document.getElementById('btn-play').click();
+                    else document.getElementById('btn-pause').click();
+                }
+                const keyMap = { 'Digit1':'player-view', 'Digit2':'shop-view', 'Digit3':'quiz-view', 'Digit4':'typer-view', 'Digit5':'sniper-view', 'Digit6':'memory-view', 'Digit7':'flex-view', 'Digit8':'arcade-view' };
+                if(keyMap[e.code]) {
+                    const targetId = keyMap[e.code];
+                    if(targetId === 'player-view' || targetId === 'shop-view' || targetId === 'quiz-view' || targetId === 'typer-view' || owned.has(targetId.split('-')[0])) {
+                        switchView(targetId);
+                    }
+                }
+            });
+
+            const shopItems = [
+                { id: 'sniper', title: 'CSS Sniper Protocol', cost: 500, nav: 'nav-sniper' },
+                { id: 'memory', title: 'Tag Match Protocol', cost: 1000, nav: 'nav-memory' },
+                { id: 'flex', title: 'Flex Master Control', cost: 2000, nav: 'nav-flex' },
+                { id: 'arcade', title: 'Mega Arcade Engine', cost: 5000, nav: 'nav-arcade' }
+            ];
+            let isShopProcessing = false;
+
+            function renderShop() {
+                const grid = document.getElementById('shop-grid');
+                grid.innerHTML = `<div class="shop-card" style="background:var(--os-text); color:var(--os-bg);" onclick="document.querySelector('[data-target=\\'quiz-view\\']').click()"><h3>Basics</h3><div class="price" style="border-color:var(--os-bg); background:var(--os-text); color:var(--os-bg);">OWNED</div></div>`;
+                
+                shopItems.forEach(item => {
+                    const isOwned = owned.has(item.id);
+                    if(isOwned) document.getElementById(item.nav).classList.remove('locked-nav');
+
+                    const card = document.createElement('div');
+                    card.className = `shop-card ${isOwned ? '' : 'locked'}`;
+                    if(isOwned) {
+                        card.style.background = 'var(--os-text)';
+                        card.style.color = 'var(--os-bg)';
+                    }
+                    
+                    card.innerHTML = `<h3>${item.title}</h3><div class="price" ${isOwned ? 'style="border-color:var(--os-bg); background:var(--os-text); color:var(--os-bg);"' : ''}>${isOwned ? 'OWNED' : item.cost+' XP'}</div>`;
+                    
+                    card.onclick = () => {
+                        if(isShopProcessing) return;
+                        if(isOwned) {
+                            switchView(`${item.id}-view`);
+                        } else if(score >= item.cost) {
+                            isShopProcessing = true;
+                            addScore(-item.cost); 
+                            owned.add(item.id); 
+                            saveState();
+                            playWin();
+                            document.getElementById(item.nav).classList.remove('locked-nav');
+                            setTimeout(() => { renderShop(); isShopProcessing = false; }, 300);
+                        } else { 
+                            playLose(); 
+                            card.classList.add('error-shake'); 
+                            setTimeout(() => card.classList.remove('error-shake'), 400); 
+                        }
+                    };
+                    grid.appendChild(card);
+                });
+            }
+            renderShop();
+
+            const audio = document.getElementById('audio-player');
+            const canvas = document.getElementById('visualizer-canvas');
+            const ctx = canvas.getContext('2d');
+            const progressSlider = document.getElementById('audio-progress');
+            const volumeSlider = document.getElementById('audio-volume');
+            
+            let actx, anl, src, data, isVis = false;
+            canvas.width = 600; canvas.height = 200;
+
+            document.getElementById('audio-upload').onchange = e => {
+                if(e.target.files[0]) { 
+                    document.getElementById('track-name').textContent = e.target.files[0].name; 
+                    audio.src = URL.createObjectURL(e.target.files[0]); 
+                    audio.load();
+                }
+            };
+            
+            document.getElementById('btn-play').onclick = () => {
+                if(!actx && audio.src) {
+                    actx = new (window.AudioContext || window.webkitAudioContext)();
+                    anl = actx.createAnalyser(); src = actx.createMediaElementSource(audio);
+                    src.connect(anl); anl.connect(actx.destination); anl.fftSize = 64;
+                    data = new Uint8Array(anl.frequencyBinCount);
+                }
+                if(actx && actx.state === 'suspended') actx.resume();
+                if(audio.src) { audio.play(); if(!isVis) { isVis=true; drawVis(); } }
+            };
+            
+            document.getElementById('btn-pause').onclick = () => audio.pause();
+
+            audio.addEventListener('timeupdate', () => {
+                if(!isNaN(audio.duration)) {
+                    progressSlider.value = (audio.currentTime / audio.duration) * 100;
+                }
+            });
+
+            progressSlider.addEventListener('input', (e) => {
+                if(!isNaN(audio.duration)) {
+                    audio.currentTime = (e.target.value / 100) * audio.duration;
+                }
+            });
+
+            volumeSlider.addEventListener('input', (e) => {
+                audio.volume = e.target.value / 100;
+            });
+            
+            function drawVis() {
+                if(!isVis) return; requestAnimationFrame(drawVis);
+                anl.getByteFrequencyData(data);
+                
+                const rootStyles = getComputedStyle(document.body);
+                const vizBg = rootStyles.getPropertyValue('--os-bg').trim() || '#ffffff';
+                const barColor = rootStyles.getPropertyValue('--os-text').trim() || '#000000';
+
+                ctx.fillStyle = vizBg; ctx.fillRect(0,0,canvas.width,canvas.height);
+                
+                let bw = (canvas.width/anl.frequencyBinCount)*2.5, x=0;
+                for(let i=0; i<anl.frequencyBinCount; i++) {
+                    let bh = data[i]*0.8;
+                    ctx.fillStyle = barColor; 
+                    ctx.fillRect(x,canvas.height-bh,bw,bh);
+                    x += bw+4; 
+                }
+            }
+            
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            const q50=[
+                {q:"1. HTML stands for?", o:["HyperText Markup Language", "Hyper Tool"], a:0},
+                {q:"2. CSS targets what?", o:["Style", "Logic"], a:0},
+                {q:"3. JS is used for?", o:["Database", "Interactivity"], a:1},
+                {q:"4. Largest heading tag?", o:["<h1>", "<h6>"], a:0},
+                {q:"5. Tag for a hyperlink?", o:["<link>", "<a>"], a:1},
+                {q:"6. Paragraph tag?", o:["<p>", "<text>"], a:0},
+                {q:"7. CSS property for bg?", o:["color", "background"], a:1},
+                {q:"8. CSS text size?", o:["font-size", "text-size"], a:0},
+                {q:"9. Make text bold HTML?", o:["<strong>", "<bld>"], a:0},
+                {q:"10. Flexbox property?", o:["display: flex", "align: flex"], a:0},
+                {q:"11. JS declare var?", o:["varOnly", "let"], a:1},
+                {q:"12. JS strict equality?", o:["==", "==="], a:1},
+                {q:"13. Array index starts at?", o:["1", "0"], a:1},
+                {q:"14. CSS ID selector?", o:["#id", ".id"], a:0},
+                {q:"15. CSS Class selector?", o:[".class", "#class"], a:0},
+                {q:"16. Ordered list?", o:["<ul>", "<ol>"], a:1},
+                {q:"17. Unordered list?", o:["<ul>", "<list>"], a:0},
+                {q:"18. JS console print?", o:["console.log", "print()"], a:0},
+                {q:"19. JS function keyword?", o:["def", "function"], a:1},
+                {q:"20. Spacing inside?", o:["margin", "padding"], a:1},
+                {q:"21. Spacing outside?", o:["margin", "padding"], a:0},
+                {q:"22. Image tag?", o:["<pic>", "<img>"], a:1},
+                {q:"23. Table row?", o:["<tr>", "<td>"], a:0},
+                {q:"24. CSS border?", o:["border", "line"], a:0},
+                {q:"25. Hide element?", o:["hide: true", "display: none"], a:1},
+                {q:"26. Listen to click?", o:["addEventListener", "onClick"], a:0},
+                {q:"27. DOM means?", o:["Document Object Model", "Data Object"], a:0},
+                {q:"28. Line break?", o:["<br>", "<break>"], a:0},
+                {q:"29. Input field?", o:["<input>", "<text>"], a:0},
+                {q:"30. Center text?", o:["text-align: center", "align: center"], a:0},
+                {q:"31. Change cursor?", o:["mouse: hand", "cursor: pointer"], a:1},
+                {q:"32. Select by ID?", o:["getElementById", "selectID"], a:0},
+                {q:"33. Select query?", o:["querySelector", "find()"], a:0},
+                {q:"34. Boolean value?", o:["true/false", "1/0"], a:0},
+                {q:"35. JS loop?", o:["loop()", "for()"], a:1},
+                {q:"36. CSS grid?", o:["grid: on", "display: grid"], a:1},
+                {q:"37. Absolute pos?", o:["pos: abs", "position: absolute"], a:1},
+                {q:"38. Form tag?", o:["<form>", "<inputGroup>"], a:0},
+                {q:"39. Parse integer?", o:["parseInt()", "toInteger()"], a:0},
+                {q:"40. Random number?", o:["Math.random()", "random()"], a:0},
+                {q:"41. Z-axis stack?", o:["z-index", "stack-order"], a:0},
+                {q:"42. Meta data?", o:["<body>", "<head>"], a:1},
+                {q:"43. Arrow func?", o:["() => {}", "func()"], a:0},
+                {q:"44. Array map?", o:["array.map()", "array.loop()"], a:0},
+                {q:"45. CSS smooth?", o:["animate", "transition"], a:1},
+                {q:"46. Video tag?", o:["<video>", "<media>"], a:0},
+                {q:"47. Promise state?", o:["Pending", "Start"], a:0},
+                {q:"48. CSS root vars?", o:["$var", "--var"], a:1},
+                {q:"49. Object to JSON?", o:["JSON.stringify()", "toJSON()"], a:0},
+                {q:"50. JSON to Object?", o:["JSON.parse()", "toObj()"], a:0}
+            ];
+            let qIdx = 0, isQProcessing = false;
+            const qUI = document.getElementById('quiz-container');
+
+            function renderQ() {
+                const optionA = q50[qIdx].o[0].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const optionB = q50[qIdx].o[1].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                qUI.innerHTML = `
+                <div class="quiz-question" id="q-box">${q50[qIdx].q}</div>
+                <div class="options-grid">
+                    <button class="btn q-btn" id="q-opt-0">A. ${optionA}</button>
+                    <button class="btn q-btn" id="q-opt-1">B. ${optionB}</button>
+                </div>
+                <p style="margin-top:1.5rem; text-align:center; font-size:1.2rem;">PROTOCOL PROGRESS: ${qIdx+1}/50</p>`;
+
+                document.getElementById('q-opt-0').onclick = () => checkQ(0);
+                document.getElementById('q-opt-1').onclick = () => checkQ(1);
+            }
+
+            function checkQ(sel) {
+                if(isQProcessing) return;
+                isQProcessing = true;
+                const qBox = document.getElementById('q-box');
+                const btns = document.querySelectorAll('.q-btn');
+                if(sel === q50[qIdx].a) { 
+                    playWin(); addScore(50); qBox.classList.add('success-pulse'); 
+                } else { 
+                    playLose(); btns[sel].classList.add('error-shake'); qBox.classList.add('error-shake'); 
+                }
+                setTimeout(() => {
+                    qIdx++; if(qIdx >= q50.length) qIdx = 0; 
+                    renderQ(); isQProcessing = false;
+                }, 500);
+            }
+            renderQ();
+
+            const tInp = document.getElementById('typer-input');
+            const tDisp = document.getElementById('snippet-display');
+            const tFb = document.getElementById('typer-feedback');
+            const tWpm = document.getElementById('typer-wpm');
+            
+            const snips = [
+                'fetch("https://devutility.api/v1/ping");',
+                'const team = ["kaustubh-cell"];',
+                'const app = FastAPI();',
+                'import { motion } from "framer-motion";', 
+                'margin: 0 auto; box-sizing: border-box;'
+            ];
+            let curSnip = snips[0];
+            let typeStart = null;
+            
+            tDisp.textContent = curSnip;
+            
+            tInp.addEventListener('focus', () => { if(!typeStart) typeStart = Date.now(); });
+
+            tInp.oninput = e => {
+                if(!typeStart) typeStart = Date.now();
+                
+                if(e.target.value === curSnip) { 
+                    const timeElapsedMins = (Date.now() - typeStart) / 60000;
+                    const words = curSnip.length / 5;
+                    const wpm = Math.round(words / timeElapsedMins);
+                    
+                    playWin(); 
+                    const pts = 30 + (wpm > 60 ? 20 : 0);
+                    addScore(pts); 
+                    
+                    e.target.value=''; 
+                    curSnip=snips[Math.floor(Math.random()*snips.length)]; 
+                    tDisp.textContent=curSnip; 
+                    
+                    tFb.textContent=`PERFECT! +${pts} XP`; 
+                    tWpm.textContent = `WPM: ${wpm}`;
+                    typeStart = null; 
+                } else if(e.target.value.length>0 && curSnip.indexOf(e.target.value)!==0) { 
+                    playLose(); 
+                    e.target.value=''; 
+                    tFb.textContent="FAULT DETECTED!"; 
+                    typeStart = null; 
+                }
+            };
+
+            const sAr = document.getElementById('sniper-arena'), sTg = document.getElementById('sniper-target');
+            let isSniperProcessing = false;
+
+            function loadSniper() {
+                sAr.innerHTML = ''; isSniperProcessing = false;
+                const targs = shuffleArray([{s:'.box', h:'<div class="sniper-box" data-c="1">.box</div>'}, {s:'#btn', h:'<div class="sniper-box" data-c="1">#btn</div>'}, {s:'.nav', h:'<div class="sniper-box" data-c="1">.nav</div>'}]);
+                const dists = ['<div class="sniper-box">div</div>', '<div class="sniper-box">.wrong</div>', '<div class="sniper-box">span</div>', '<div class="sniper-box">#err</div>'];
+                
+                let r = targs[0];
+                sTg.textContent = `TARGET: ${r.s}`;
+                
+                let els = shuffleArray([r.h, dists[0], dists[1], dists[2]]);
+                sAr.innerHTML = els.join('');
+                
+                sAr.querySelectorAll('.sniper-box').forEach(b => b.onclick = () => {
+                    if(isSniperProcessing) return;
+                    isSniperProcessing = true;
+                    if(b.dataset.c) { 
+                        playWin(); addScore(100); b.classList.add('success-pulse'); setTimeout(loadSniper, 500); 
+                    } else { 
+                        playLose(); b.classList.add('error-shake'); setTimeout(() => { b.classList.remove('error-shake'); isSniperProcessing = false; }, 400); 
+                    }
+                });
+            }
+            loadSniper();
+
+            const mGrid = document.getElementById('memory-grid');
+            const mPairs = [{t:'<a>',m:'Link'},{t:'Link',m:'<a>'},{t:'<img>',m:'Image'},{t:'Image',m:'<img>'},{t:'<h1>',m:'Heading'},{t:'Heading',m:'<h1>'}];
+            let mFlips = [], isMemoryProcessing = false;
+
+            function loadMem() {
+                mGrid.innerHTML = '';
+                shuffleArray(mPairs).forEach(p => {
+                    let c = document.createElement('div'); c.className = 'memory-card'; 
+                    c.innerHTML = `<span>${p.t.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+                    c.onclick = () => {
+                        if(isMemoryProcessing || c.classList.contains('flipped') || mFlips.length >= 2) return;
+                        c.classList.add('flipped'); mFlips.push({el:c, val:p.t, match:p.m});
+                        if(mFlips.length === 2) {
+                            isMemoryProcessing = true;
+                            if(mFlips[0].match === mFlips[1].val) { 
+                                playWin(); addScore(200); 
+                                setTimeout(()=>{
+                                    mFlips.forEach(f=>f.el.classList.add('matched')); mFlips=[]; isMemoryProcessing = false;
+                                    if(document.querySelectorAll('.memory-card.matched').length===mPairs.length) loadMem();
+                                }, 500); 
+                            } else { 
+                                playLose(); mFlips.forEach(f=>f.el.classList.add('error-shake')); 
+                                setTimeout(()=>{
+                                    mFlips.forEach(f=>f.el.classList.remove('flipped','error-shake')); mFlips=[]; isMemoryProcessing = false;
+                                }, 800); 
+                            }
+                        }
+                    }; 
+                    mGrid.appendChild(c);
+                });
+            }
+            loadMem();
+
+            const fAr = document.getElementById('flex-arena'), fGh = document.getElementById('flex-ghost'), fOpt = document.getElementById('flex-options'), fPrm = document.getElementById('flex-prompt');
+            const fChals = [
+                {t:'Center_Axis', g:'top:50%;left:50%;transform:translate(-50%,-50%);', c:'justify-content: center; align-items: center;', w:'justify-content: flex-end; align-items: flex-start;'},
+                {t:'Top_Right', g:'top:0;right:0;', c:'justify-content: flex-end; align-items: flex-start;', w:'justify-content: center; align-items: center;'},
+                {t:'Bottom_Left', g:'bottom:0;left:0;', c:'justify-content: flex-start; align-items: flex-end;', w:'justify-content: center; align-items: flex-start;'}
+            ];
+            let isFlexProcessing = false;
+
+            function loadFlex() {
+                let r = fChals[Math.floor(Math.random()*fChals.length)];
+                fPrm.textContent = `TARGET ZONE: ${r.t}`; fAr.style=''; fGh.style=r.g;
+                
+                let opts = shuffleArray([r.c, r.w]);
+                fOpt.innerHTML = '';
+                opts.forEach(o => {
+                    let b = document.createElement('button'); b.className = 'btn'; b.textContent = o;
+                    b.onclick = () => {
+                        if(isFlexProcessing) return;
+                        isFlexProcessing = true;
+                        if(o===r.c) { 
+                            playWin(); addScore(300); fAr.style=o; b.classList.add('success-pulse'); 
+                            setTimeout(() => { loadFlex(); isFlexProcessing = false; }, 1000); 
+                        } else { 
+                            playLose(); b.classList.add('error-shake'); 
+                            setTimeout(() => { b.classList.remove('error-shake'); isFlexProcessing = false; }, 400); 
+                        }
+                    }; 
+                    fOpt.appendChild(b);
+                });
+            }
+            loadFlex();
+
+            const arcUI = document.getElementById('arcade-container');
+            let isArcadeProcessing = false;
+
+            const arcTypes = [
+                { type: "YSWS System", q: "Hack Club YSWS currency?", o: ["Pages", "Coins"], a: 0 },
+                { type: "Git CMD", q: "CMD to save changes?", o: ["git commit", "git pull"], a: 0 },
+                { type: "HTTP Code", q: "Error 404 meaning?", o: ["Not Found", "OK"], a: 0 },
+                { type: "Bug Hunt", q: "cosnt x = 1; Bug?", o: ["cosnt -> const", "x -> y"], a: 0 },
+                { type: "Logic", q: "true && false?", o: ["false", "true"], a: 0 },
+                { type: "Phyto API", q: "Best backend for Phyto?", o: ["FastAPI", "jQuery"], a: 0 },
+                { type: "Binary", q: "1010 Dec?", o: ["10", "8"], a: 0 },
+                { type: "Emmet", q: "div.box expansion?", o: ["<div class='box'>", "<box>"], a: 0 },
+                { type: "MycoMaze", q: "Pac-Man aesthetic?", o: ["8-bit", "4K Ultra"], a: 0 },
+                { type: "Vim", q: "Vim: Cursor down?", o: ["j", "k"], a: 0 }
+            ];
+
+            function loadArcade() {
+                let g = arcTypes[Math.floor(Math.random() * arcTypes.length)];
+                
+                let rawOptions = [
+                    { text: g.o[0].replace(/</g, '&lt;').replace(/>/g, '&gt;'), isCorrect: g.a === 0 },
+                    { text: g.o[1].replace(/</g, '&lt;').replace(/>/g, '&gt;'), isCorrect: g.a === 1 }
+                ];
+                let shuffledOpts = shuffleArray(rawOptions);
+                
+                arcUI.innerHTML = `
+                    <fieldset class="os-fieldset" style="padding:1rem;">
+                        <legend class="os-legend">MODE: ${g.type}</legend>
+                        <div class="quiz-question">${g.q}</div>
+                        <div class="arcade-grid">
+                            <button class="btn arc-btn" data-correct="${shuffledOpts[0].isCorrect}">${shuffledOpts[0].text}</button>
+                            <button class="btn arc-btn" data-correct="${shuffledOpts[1].isCorrect}">${shuffledOpts[1].text}</button>
+                        </div>
+                    </fieldset>
+                `;
+                
+                document.querySelectorAll('.arc-btn').forEach(btn => {
+                    btn.onclick = function() {
+                        if(isArcadeProcessing) return;
+                        isArcadeProcessing = true;
+                        if(this.dataset.correct === "true") { 
+                            playWin(); addScore(150); this.classList.add('success-pulse'); 
+                            setTimeout(() => { loadArcade(); isArcadeProcessing = false; }, 500); 
+                        } else { 
+                            playLose(); this.classList.add('error-shake'); 
+                            setTimeout(() => { this.classList.remove('error-shake'); isArcadeProcessing = false; }, 400); 
+                        }
+                    };
+                });
+            }
+            loadArcade();
+        });
+    </script>
+</body>
+</html>
